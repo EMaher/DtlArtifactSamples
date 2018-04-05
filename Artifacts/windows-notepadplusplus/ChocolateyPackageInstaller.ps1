@@ -156,7 +156,6 @@ try
     Write-Host "Preparing to install Chocolatey packages: $Packages."
     Install-Packages -Packages $Packages
 
-    Write-Host "`nThe artifact was applied successfully.`n"
 }
 finally
 {
