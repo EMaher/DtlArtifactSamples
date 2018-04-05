@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/Azure/azure-devtestlab/master/schemas/2015-01-01/dtlArtifacts.json",
-  "title": "Fail.",
+  "title": "Fail",
   "publisher": "My Company",
   "description": "Artifact that purposely fails",
   "tags": [
