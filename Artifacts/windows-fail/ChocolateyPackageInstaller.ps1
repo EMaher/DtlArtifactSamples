@@ -63,7 +63,7 @@ function Install-Packages
 
     $Packages = $Packages.split(',; ', [StringSplitOptions]::RemoveEmptyEntries) -join ' '
     $expression = "$choco install -y -f --acceptlicense --allow-empty-checksums --no-progress --stoponfirstfailure $Packages"
-    Invoke-ExpressionImpl -Expression $expression 
+    Invoke-Expression -Expression $expression 
 }
 
 function Invoke-ExpressionImpl
