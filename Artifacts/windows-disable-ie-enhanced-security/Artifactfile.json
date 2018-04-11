@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-devtestlab/master/schemas/2015-01-01/dtlArtifacts.json",
+  "title": "Notepad++",
+  "publisher": "Elizabeth",
+  "description": "Installs Notepad ++",
+  "tags": [
+    "Windows"
+  ],
+  "iconUri": "https://c.s-microsoft.com/en-us/CMSImages/microsoft_logo_56x56.png?version=ad0d2fa7-0ee8-4e82-ddbf-8ea5dc9d9c23",
+  "targetOsType": "Windows",
+  "parameters": {},
+  "runCommand": {
+    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy bypass \"& ./artifact-main.ps1',  '\"')]"
+  },
+  "postDeployActions": [
+    {
+      "action": "restart"
+    }
+  ]
+}
