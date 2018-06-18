@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param ( )
 
-InstallChocoPackages -packageList 'failure.install'
+Write-Error "Purposely failing the artifact installation."
 
 
