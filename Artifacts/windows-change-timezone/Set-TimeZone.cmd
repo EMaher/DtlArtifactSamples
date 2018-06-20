@@ -1,0 +1,1 @@
+PowerShell.exe -ExecutionPolicy Bypass -File Set-TimeZone.ps1 %1

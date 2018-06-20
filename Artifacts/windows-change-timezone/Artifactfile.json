@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-devtestlab/master/schemas/2015-01-01/dtlArtifacts.json",
+  "title": "Change Time Zone",
+  "publisher": "Example",
+  "description": "Sample to change time zone to GB time",
+  "tags": [
+    "Windows"
+  ],
+  "targetOsType": "Windows",
+  "iconUri": "https://cdn2.iconfinder.com/data/icons/time-date-management-1/64/time__data_management-16-512.png",
+  "parameters": {
+    "region": {
+      "type": "string",
+      "displayName": "Region",
+      "description": "Only a selection from the list is allowed.",
+      "defaultValue": "GB",
+      "allowEmpty": false,
+      "allowedValues": [
+        "GB",
+        "Ireland"
+      ]
+    }
+  },
+  "runCommand": { 
+    "commandToExecute": "[concat('powershell.exe -ExecutionPolicy bypass \"& ./artifact-main.ps1', ' -Region ', parameters('region'), '\"')]"
+  }
+}
