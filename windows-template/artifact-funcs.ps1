@@ -74,3 +74,134 @@ function InstallChocoPackages ($packageList)
         throw "Unable to find chocolatey install script at $chocoScriptFile"
     }
 }
+
+function Invoke-Process
+{
+    [CmdletBinding()]
+    param (
+        [string] $FileName = $(throw 'The FileName must be provided'),
+        [string] $Arguments = '',
+        [Array] $ValidExitCodes = @()
+    )
+
+    Write-Host "Running command '$FileName $Arguments'"
+
+    # Prepare specifics for starting the process that will install the component.
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo -Property @{
+        Arguments = $Arguments
+        CreateNoWindow = $true
+        ErrorDialog = $false
+        FileName = $FileName
+        RedirectStandardError = $true
+        RedirectStandardInput = $true
+        RedirectStandardOutput = $true
+        UseShellExecute = $false
+        Verb = 'runas'
+        WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+        WorkingDirectory = $PSScriptRoot
+    }
+
+    # Initialize a new process.
+    $process = New-Object System.Diagnostics.Process
+    try
+    {
+        # Configure the process so we can capture all its output.
+        $process.EnableRaisingEvents = $true
+        # Hook into the standard output and error stream events
+        $errEvent = Register-ObjectEvent -SourceIdentifier OnErrorDataReceived $process "ErrorDataReceived" `
+            `
+            {
+                param
+                (
+                    [System.Object] $sender,
+                    [System.Diagnostics.DataReceivedEventArgs] $e
+                )
+                foreach ($s in $e.Data) { if ($s) { Write-Host $err $s -ForegroundColor Red } }
+            }
+        $outEvent = Register-ObjectEvent -SourceIdentifier OnOutputDataReceived $process "OutputDataReceived" `
+            `
+            {
+                param
+                (
+                    [System.Object] $sender,
+                    [System.Diagnostics.DataReceivedEventArgs] $e
+                )
+                foreach ($s in $e.Data) { if ($s -and $s.Trim('. ').Length -gt 0) { Write-Host $s } }
+            }
+        $process.StartInfo = $startInfo;
+        # Attempt to start the process.
+        if ($process.Start())
+        {
+            # Read from all redirected streams before waiting to prevent deadlock.
+            $process.BeginErrorReadLine()
+            $process.BeginOutputReadLine()
+            # Wait for the application to exit for no more than 5 minutes.
+            $process.WaitForExit(300000) | Out-Null
+        }
+        # Ensure we extract an exit code, if not from the process itself.
+        $exitCode = $process.ExitCode
+        # Determine if process requires a reboot.
+        if ($exitCode -eq 3010)
+        {
+            Write-Host 'The recent changes indicate a reboot is necessary. Please reboot at your earliest convenience.'
+        }
+        elseif ($ValidExitCodes.Contains($exitCode))
+        {
+            Write-Host "$FileName exited with expected valid exit code: $exitCode"
+            # Override to ensure the overall script doesn't fail.
+            $LASTEXITCODE = 0
+        }
+        # Determine if process failed to execute.
+        elseif ($exitCode -gt 0)
+        {
+            # Throwing an exception at this point will stop any subsequent
+            # attempts for deployment.
+            throw "$FileName exited with code: $exitCode"
+        }
+    }
+    finally
+    {
+        # Free all resources associated to the process.
+        $process.Close();
+        # Remove any previous event handlers.
+        Unregister-Event OnErrorDataReceived -Force | Out-Null
+        Unregister-Event OnOutputDataReceived -Force | Out-Null
+    }
+}
+
+function Install-WebPlatformInstaller
+{
+    [CmdletBinding()]
+    param(
+    )
+
+    if (Test-Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WebPlatformInstaller")
+    {
+        Write-Host 'Web Platform Installer already installed'
+    }
+    else
+    {
+        # Get MSI to install Web Platform Installer URL.
+        if ($ENV:PROCESSOR_ARCHITECTURE -eq 'AMD64')
+        {
+            $wpiPackage = "http://download.microsoft.com/download/C/F/F/CFF3A0B8-99D4-41A2-AE1A-496C08BEB904/WebPlatformInstaller_amd64_en-US.msi"
+        }
+        else
+        {
+            $wpiPackage = "http://download.microsoft.com/download/C/F/F/CFF3A0B8-99D4-41A2-AE1A-496C08BEB904/WebPlatformInstaller_x86_en-US.msi"
+        }
+
+        Write-Host "Installing Web Platform Installer"
+        Invoke-Process -FileName "$env:windir\system32\msiexec.exe" -Arguments "/quiet /norestart /package $wpiPackage"
+    }
+}
+
+function Get-WebPlatformInstallerLocation
+{
+    [CmdletBinding()]
+    param(
+    )
+
+    $wpiInfo = (ls "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WebPlatformInstaller")[-1].Name
+    return Join-Path (Get-ItemProperty -Path "Registry::$wpiInfo" -Name 'InstallPath').InstallPath 'webpicmd.exe'
+}
